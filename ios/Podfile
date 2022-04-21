@@ -1,0 +1,81 @@
+platform :ios, '11.0'
+
+require_relative '../node_modules/react-native-unimodules/cocoapods'
+require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
+
+target 'Tanzak' do
+  rnPrefix = "../node_modules/react-native"
+
+  # React Native and its dependencies
+  pod 'FBLazyVector', :path => "#{rnPrefix}/Libraries/FBLazyVector"
+  pod 'FBReactNativeSpec', :path => "#{rnPrefix}/Libraries/FBReactNativeSpec"
+  pod 'RCTRequired', :path => "#{rnPrefix}/Libraries/RCTRequired"
+  pod 'RCTTypeSafety', :path => "#{rnPrefix}/Libraries/TypeSafety"
+  pod 'React', :path => "#{rnPrefix}/"
+  pod 'React-Core', :path => "#{rnPrefix}/"
+  pod 'React-CoreModules', :path => "#{rnPrefix}/React/CoreModules"
+  pod 'React-RCTActionSheet', :path => "#{rnPrefix}/Libraries/ActionSheetIOS"
+  pod 'React-RCTAnimation', :path => "#{rnPrefix}/Libraries/NativeAnimation"
+  pod 'React-RCTBlob', :path => "#{rnPrefix}/Libraries/Blob"
+  pod 'React-RCTImage', :path => "#{rnPrefix}/Libraries/Image"
+  pod 'React-RCTLinking', :path => "#{rnPrefix}/Libraries/LinkingIOS"
+  pod 'React-RCTNetwork', :path => "#{rnPrefix}/Libraries/Network"
+  pod 'React-RCTSettings', :path => "#{rnPrefix}/Libraries/Settings"
+  pod 'React-RCTText', :path => "#{rnPrefix}/Libraries/Text"
+  pod 'React-RCTVibration', :path => "#{rnPrefix}/Libraries/Vibration"
+  pod 'React-Core/RCTWebSocket', :path => "#{rnPrefix}/"
+  pod 'React-Core/DevSupport', :path => "#{rnPrefix}/"
+  pod 'React-cxxreact', :path => "#{rnPrefix}/ReactCommon/cxxreact"
+  pod 'React-jsi', :path => "#{rnPrefix}/ReactCommon/jsi"
+  pod 'React-jsiexecutor', :path => "#{rnPrefix}/ReactCommon/jsiexecutor"
+  pod 'React-jsinspector', :path => "#{rnPrefix}/ReactCommon/jsinspector"
+  pod 'ReactCommon/jscallinvoker', :path => "#{rnPrefix}/ReactCommon"
+  pod 'ReactCommon/turbomodule/core', :path => "#{rnPrefix}/ReactCommon"
+  pod 'Yoga', :path => "#{rnPrefix}/ReactCommon/yoga"
+  pod 'DoubleConversion', :podspec => "#{rnPrefix}/third-party-podspecs/DoubleConversion.podspec"
+  pod 'glog', :podspec => "#{rnPrefix}/third-party-podspecs/glog.podspec"
+  pod 'Folly', :podspec => "#{rnPrefix}/third-party-podspecs/Folly.podspec"
+
+  
+  # Automatically detect installed unimodules
+  use_unimodules!
+
+  # react-native-cli autolinking
+  use_native_modules!
+
+  # Other native modulescd -
+  # turn on VPN if install those package fail
+  pod 'Google-Mobile-Ads-SDK'
+  pod 'AppLovinSDK'
+  pod 'AppLovinMediationGoogleAdapter'
+  pod 'AppLovinMediationFacebookAdapter'
+
+  # Define find-and-replace function
+   def find_and_replace(dir, findstr, replacestr)
+    Dir[dir].each do |name|
+        text = File.read(name)
+        replace = text.gsub(findstr,replacestr)
+        replaced = text.index(replacestr)
+        if replaced == nil && text != replace
+            puts "Fix: " + name
+            File.open(name, "w") { |file| file.puts replace }
+            STDOUT.flush
+        end
+    end
+      Dir[dir + '*/'].each(&method(:find_and_replace))
+  end
+  # Fix build XCode 12.5, iOS 15 and higher
+  find_and_replace("../node_modules/react-native/React/CxxBridge/RCTCxxBridge.mm",
+  "_initializeModules:(NSArray<id<RCTBridgeModule>> *)modules", "_initializeModules:(NSArray<Class> *)modules")
+  find_and_replace("../node_modules/react-native/Libraries/fishhook/fishhook.c",
+        "indirect_symbol_bindings[i] = cur->rebindings[j].replacement;", "if (i < (sizeof(indirect_symbol_bindings) / sizeof(indirect_symbol_bindings[0]))) { \n indirect_symbol_bindings[i]=cur->rebindings[j].replacement; \n }")
+  find_and_replace("../node_modules/react-native/ReactCommon/turbomodule/core/platform/ios/RCTTurboModuleManager.mm",
+        "RCTBridgeModuleNameForClass(module))", "RCTBridgeModuleNameForClass(Class(module)))")
+        # Fix Splash Screen
+  find_and_replace("../node_modules/expo/build/launch/SplashScreen.js",
+  "const { ExponentSplashScreen: SplashScreen = {} } = NativeModules;","import* as SplashScreen from 'expo-splash-screen'")
+  find_and_replace("../node_modules/expo/build/launch/SplashScreen.js",
+  "SplashScreen.preventAutoHide","SplashScreen.preventAutoHideAsync",)
+  find_and_replace("../node_modules/expo/build/launch/SplashScreen.js",
+  "SplashScreen.hide","SplashScreen.hideAsync",)
+end
